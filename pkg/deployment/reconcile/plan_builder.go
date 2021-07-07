@@ -125,6 +125,15 @@ func createPlan(ctx context.Context, log zerolog.Logger, apiObject k8sutil.APIOb
 
 	pb := NewWithPlanBuilder(ctx, log, apiObject, spec, status, cachedStatus, builderCtx)
 
+	// Propagate status into spec if needed
+	status.Members.ForeachServerGroup(func(group api.ServerGroup, list api.MemberStatusList) error {
+		for _, m := range list {
+			if m.Phase != api.MemberPhasePending {
+				continue
+			}
+		}
+	})
+
 	// Check for members in failed state
 	status.Members.ForeachServerGroup(func(group api.ServerGroup, members api.MemberStatusList) error {
 		for _, m := range members {
@@ -310,6 +319,7 @@ func createRotateMemberPlan(log zerolog.Logger, member api.MemberStatus,
 		Str("reason", reason).
 		Msg("Creating rotation plan")
 	plan := api.Plan{
+		api.NewAction(api.ActionTypeArangoMemberUpdatePodStatus, group, member.ID, "Propagate pod status"),
 		api.NewAction(api.ActionTypeCleanTLSKeyfileCertificate, group, member.ID, "Remove server keyfile and enforce renewal/recreation"),
 		api.NewAction(api.ActionTypeResignLeadership, group, member.ID, reason),
 		api.NewAction(api.ActionTypeRotateMember, group, member.ID, reason),
