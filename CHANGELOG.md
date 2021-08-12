@@ -2,7 +2,8 @@
 
 ## [master](https://github.com/arangodb/kube-arangodb/tree/master) (N/A)
 - Update 'github.com/arangodb/arangosync-client' dependency to v0.7.0
-- Add graceful shutdown for coordinators.
+- Add graceful shutdown for coordinators. 
+  Available since ArangoDB versions: 3.7.12, 3.8.1, 3.9.0.
 
 ## [1.2.1](https://github.com/arangodb/kube-arangodb/tree/1.2.1) (2021-07-28)
 - Fix ArangoMember race with multiple ArangoDeployments within single namespace
