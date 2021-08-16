@@ -197,7 +197,9 @@ func (r *Resources) probeCommand(spec api.DeploymentSpec, endpoint string) ([]st
 
 	return args, nil
 }
-
+// this is where we can do some extension to include changes related to adding custom liveness, 
+// We will need to have access to the config passed in to get the custom command, 
+// the config spec will need to be adjusted to include a custom exec liveness test.
 func (r *Resources) probeBuilderLivenessCoreSelect() probeBuilder {
 	if features.JWTRotation().Enabled() {
 		return r.probeBuilderLivenessCoreOperator
