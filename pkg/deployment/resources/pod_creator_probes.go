@@ -173,7 +173,7 @@ func (r *Resources) probeBuilders() map[api.ServerGroup]probeCheckBuilder {
 		},
 	}
 }
-
+// we need to update this to use the custom command if defined, in addition to the default? 
 func (r *Resources) probeCommand(spec api.DeploymentSpec, endpoint string) ([]string, error) {
 	binaryPath, err := os.Executable()
 	if err != nil {
@@ -209,7 +209,7 @@ func (r *Resources) probeBuilderLivenessCoreSelect() probeBuilder {
 }
 
 func (r *Resources) probeBuilderLivenessCoreOperator(spec api.DeploymentSpec, group api.ServerGroup, version driver.Version) (Probe, error) {
-	args, err := r.probeCommand(spec, "/_api/version")
+	args, err := r.probeCommand(spec, "/_api/version") // what do we do here for custom commands? override it? 
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +231,7 @@ func (r *Resources) probeBuilderLivenessCore(spec api.DeploymentSpec, group api.
 			return nil, errors.WithStack(err)
 		}
 	}
+	// what to do for the custom liveness, override this? can we have multiple liveness commands?
 	return &probes.HTTPProbeConfig{
 		LocalPath:     "/_api/version",
 		Secure:        spec.IsSecure(),
