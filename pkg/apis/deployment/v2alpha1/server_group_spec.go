@@ -268,12 +268,23 @@ func (s ServerGroupProbesSpec) GetReadinessProbeDisabled() *bool {
 }
 
 // ServerGroupProbeSpec
+// We add support for custom liveness commands
 type ServerGroupProbeSpec struct {
+	Command             *string `json:"command,omitempty"`
 	InitialDelaySeconds *int32 `json:"initialDelaySeconds,omitempty"`
 	PeriodSeconds       *int32 `json:"periodSeconds,omitempty"`
 	TimeoutSeconds      *int32 `json:"timeoutSeconds,omitempty"`
 	SuccessThreshold    *int32 `json:"successThreshold,omitempty"`
 	FailureThreshold    *int32 `json:"failureThreshold,omitempty"`
+}
+
+// GetCommand returns Command valid value. In case if Command is nil default is returned.
+func (s *ServerGroupProbeSpec) GetCommand(d string) string {
+	if s == nil || s.Command == nil {
+		return []string{ "sh",  "-c", "cd", "/data/lost+found" }
+	}
+
+	return *s.Command
 }
 
 // GetInitialDelaySeconds return InitialDelaySeconds valid value. In case if InitialDelaySeconds is nil default is returned.
