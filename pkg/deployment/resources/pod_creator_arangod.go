@@ -136,7 +136,19 @@ func (a *ArangoDContainer) GetSecurityContext() *core.SecurityContext {
 
 func (a *ArangoDContainer) GetProbes() (*core.Probe, *core.Probe, *core.Probe, error) {
 	var liveness, readiness, startup *core.Probe
-
+        // this is called once during container creation, https://github.com/arangodb/kube-arangodb/blob/6712304dd215b350bb5c71cd1fb16596bbc24d23/pkg/util/k8sutil/pods.go#L508, 
+	// its not called on the controller loop, so we loose the http one if we introduce the volume healthcheck.
+	// call chain: 
+	// GetProbes, then
+	// getLivenessProbe
+	// https://github.com/arangodb/kube-arangodb/blob/95069bc156bdedc561919b8f56021d690458860e/pkg/deployment/resources/pod_creator_probes.go#L88
+	// then probebuilder:
+	//https://github.com/arangodb/kube-arangodb/blob/95069bc156bdedc561919b8f56021d690458860e/pkg/deployment/resources/pod_creator_probes.go#L190
+	// then  probeBuilderLivenessCoreSelect
+	// then probeBuilderLivenessCore
+	// https://github.com/arangodb/kube-arangodb/blob/95069bc156bdedc561919b8f56021d690458860e/pkg/deployment/resources/pod_creator_probes.go#L299
+	// then config of the probe (where we can override things if needed. )
+	// https://github.com/arangodb/kube-arangodb/blob/6712304dd215b350bb5c71cd1fb16596bbc24d23/pkg/util/k8sutil/probes/probes.go#L61
 	probeLivenessConfig, err := a.resources.getLivenessProbe(a.spec, a.group, a.imageInfo.ArangoDBVersion)
 	if err != nil {
 		return nil, nil, nil, err
