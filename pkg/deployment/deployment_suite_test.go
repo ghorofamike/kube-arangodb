@@ -137,6 +137,10 @@ func createTestLivenessProbe(mode string, secure bool, authorization string, por
 	return getProbeCreator(mode)(secure, authorization, "/_api/version", port).Create()
 }
 
+func createTestCustomCmdLivenessProbe(mode string, cmd string, authorization string, testPath string) *core.Probe {
+	return getProbeCreator(mode)(cmd, authorization, testPath ).Create()
+}
+
 func createTestReadinessProbe(mode string, secure bool, authorization string) *core.Probe {
 	p := getProbeCreator(mode)(secure, authorization, "/_admin/server/availability", k8sutil.ArangoPort).Create()
 
@@ -147,16 +151,20 @@ func createTestReadinessProbe(mode string, secure bool, authorization string) *c
 }
 
 type probeCreator func(secure bool, authorization, endpoint string, port int) resources.Probe
+type customProbeCreator func(cmd string, authorization, testPath string ) resources.Probe
 
 const (
 	cmdProbe  = "cmdProbe"
 	httpProbe = "http"
+	customCmdProbe="customCmdProbe"
 )
 
 func getProbeCreator(t string) probeCreator {
 	switch t {
 	case cmdProbe:
 		return getCMDProbeCreator()
+	case customCmdProbe:
+		return getCustomCMDProbeCreator()
 	default:
 		return getHTTPProbeCreator()
 	}
@@ -171,6 +179,12 @@ func getHTTPProbeCreator() probeCreator {
 func getCMDProbeCreator() probeCreator {
 	return func(secure bool, authorization, endpoint string, port int) resources.Probe {
 		return createCMDTestProbe(secure, authorization != "", endpoint)
+	}
+}
+
+func getCustomCMDProbeCreator() customProbeCreator {
+	return func(cmd string, authorization, testPath string) resources.Probe {
+		return createCustomCMDTestProbe(cmd, authorization != "", testPath)
 	}
 }
 
@@ -189,6 +203,20 @@ func createCMDTestProbe(secure, authorization bool, endpoint string) resources.P
 
 	if authorization {
 		args = append(args, "--auth")
+	}
+
+	return &probes.CMDProbeConfig{
+		Command: args,
+	}
+}
+
+
+func createCustomCMDTestProbe(cmd string, testPath string) resources.Probe {
+	bin, _ := os.Executable()
+	args := []string{
+		filepath.Join(k8sutil.LifecycleVolumeMountDir, filepath.Base(bin)),
+		fmt.Sprintf("%s",cmd),
+		fmt.Sprintf("%s", testPath),
 	}
 
 	return &probes.CMDProbeConfig{
