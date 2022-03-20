@@ -50,7 +50,7 @@ var (
 		JWTPath  string
 	}
 )
-
+// we can extend this to do a cmd as well, so both can be done at once?
 func init() {
 	f := cmdLifecycleProbe.PersistentFlags()
 
