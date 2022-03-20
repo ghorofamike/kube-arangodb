@@ -234,6 +234,70 @@ func TestEnsurePod_ArangoDB_Volumes(t *testing.T) {
 				},
 			},
 		},
+		
+		{
+			Name: "DBserver POD with Volume Mount Custom CMD liveness",
+			ArangoDeployment: &api.ArangoDeployment{
+				Spec: api.DeploymentSpec{
+					Image:          util.NewString(testImage),
+					Authentication: noAuthentication,
+					TLS:            noTLS,
+					DBServers: api.ServerGroupSpec{
+						Volumes: []api.ServerGroupSpecVolume{
+							createExampleVolume("volume"),
+						},
+						VolumeMounts: []api.ServerGroupSpecVolumeMount{
+							createExampleVolumeMount("volume"),
+						},
+					},
+				},
+			},
+			Helper: func(t *testing.T, deployment *Deployment, testCase *testCaseStruct) {
+				deployment.status.last = api.DeploymentStatus{
+					Members: api.DeploymentStatusMembers{
+						DBServers: api.MemberStatusList{
+							firstDBServerStatus,
+						},
+					},
+					Images: createTestImages(false),
+				}
+				deployment.status.last.Members.DBServers[0].IsInitialized = true
+
+				testCase.createTestPodData(deployment, api.ServerGroupDBServers, firstDBServerStatus)
+			},
+			ExpectedEvent: "member dbserver is created",
+			ExpectedPod: core.Pod{
+				Spec: core.PodSpec{
+					Volumes: []core.Volume{
+						k8sutil.CreateVolumeEmptyDir(k8sutil.ArangodVolumeName),
+						createExampleVolume("volume").Volume(),
+					},
+					Containers: []core.Container{
+						{
+							Name:      k8sutil.ServerContainerName,
+							Image:     testImage,
+							Command:   createTestCommandForDBServer(firstDBServerStatus.ID, false, false, false),
+							Ports:     createTestPorts(),
+							Resources: emptyResources,
+							VolumeMounts: []core.VolumeMount{
+								k8sutil.ArangodVolumeMount(),
+								createExampleVolumeMount("volume").VolumeMount(),
+							},
+							LivenessProbe:  createTestCustomCmdLivenessProbe(httpProbe, "ls", "", "/data/lost+found"),
+							ImagePullPolicy: core.PullIfNotPresent,
+							SecurityContext: securityContext.NewSecurityContext(),
+						},
+					},
+					RestartPolicy:                 core.RestartPolicyNever,
+					TerminationGracePeriodSeconds: &defaultDBServerTerminationTimeout,
+					Hostname: testDeploymentName + "-" + api.ServerGroupDBServersString + "-" +
+						firstDBServerStatus.ID,
+					Subdomain: testDeploymentName + "-int",
+					Affinity: k8sutil.CreateAffinity(testDeploymentName, api.ServerGroupDBServersString,
+						false, ""),
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases...)
