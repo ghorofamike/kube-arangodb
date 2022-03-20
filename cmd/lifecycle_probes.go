@@ -48,9 +48,13 @@ var (
 		Auth     bool
 		Endpoint string
 		JWTPath  string
+		CMD      string
+		TestPath string
 	}
 )
 // we can extend this to do a cmd as well, so both can be done at once?
+// this runs from the deployment controller, not the db server, so it would have to call the kube api to run the
+// command on it, so its pointless to implement the volume liveness here. 
 func init() {
 	f := cmdLifecycleProbe.PersistentFlags()
 
@@ -58,6 +62,8 @@ func init() {
 	f.BoolVarP(&probeInput.Auth, "auth", "", false, "Determines if authentication is enabled")
 	f.StringVarP(&probeInput.Endpoint, "endpoint", "", "/_api/version", "Endpoint (path) to call for lifecycle probe")
 	f.StringVarP(&probeInput.JWTPath, "jwt", "", k8sutil.ClusterJWTSecretVolumeMountDir, "Path to the JWT tokens")
+	f.StringVarP(&probeInput.CMD, "cmd", "", "ls", "Command name")
+	f.StringVarP(&probeInput.TestPath, "testpath", "", "/data/lost+found", "Mount Path to test volume liveness")
 }
 
 func probeClient() *http.Client {
